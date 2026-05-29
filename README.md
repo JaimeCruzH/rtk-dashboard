@@ -1,6 +1,6 @@
 # RTK Token Savings Dashboard
 
-Dashboard web para visualizar estadísticas de ahorro de tokens de [RTK](https://github.com/nousresearch/rtk) (Rewrite Token Killer), una herramienta de reescritura de prompts que reduce el consumo de tokens en modelos de lenguaje.
+Dashboard web para visualizar estadísticas de ahorro de tokens de [RTK](https://github.com/rtk-ai/rtk) (Rewrite Token Killer), una herramienta de reescritura de prompts que reduce el consumo de tokens en modelos de lenguaje.
 
 ## Demo
 
@@ -8,7 +8,7 @@ Dashboard web para visualizar estadísticas de ahorro de tokens de [RTK](https:/
 
 ## Requisitos
 
-- [RTK](https://github.com/nousresearch/rtk) instalado y configurado
+- [RTK](https://github.com/rtk-ai/rtk) instalado y configurado
 - Python 3.8+ con FastAPI y Uvicorn
 - Acceso a la base de datos `history.db` de RTK (SQLite)
 
@@ -58,8 +58,6 @@ set RTK_DB_PATH="%APPDATA%\\rtk\\history.db"
 Una vez iniciado, el dashboard está disponible en:
 
 - **Local:** `http://localhost:8088/`
-- **Tailscale:** `http://100.80.61.96:8088/` *(redirección de red configurada)*
-- **Dominio:** `http://agentexperto.work:8088/` *(requiere configuración DNS)*
 
 ## Formato de números
 
