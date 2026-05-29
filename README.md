@@ -1,25 +1,43 @@
 # RTK Token Savings Dashboard
 
-Dashboard web para visualizar estadísticas de ahorro de tokens de [RTK](https://github.com/nousresearch/rtk) (Rewrite Token Killer),una herramienta de reescritura de prompts que reduce el consumo de tokens en modelos de lenguaje.
+Dashboard web para visualizar estadísticas de ahorro de tokens de [RTK](https://github.com/nousresearch/rtk) (Rewrite Token Killer), una herramienta de reescritura de prompts que reduce el consumo de tokens en modelos de lenguaje.
 
 ## Demo
 
-![Dashboard Screenshot](https://raw.githubusercontent.com/JaimeCruzH/rtk-dashboard/main/screenshot.png)
+> 📸Screenshot pendiente — captura desde `http://localhost:8088/` y guarda como `screenshot.png` en la raíz del proyecto.
 
-## Stack
+## Requisitos
 
-- **Backend:** FastAPI (Python)
-- **Frontend:** Chart.js con tema oscuro
-- **Datos:** SQLite (`history.db` de RTK)
-- **Servidor:** Uvicorn, puerto 8088
+- [RTK](https://github.com/nousresearch/rtk) instalado y configurado
+- Python 3.8+ con FastAPI y Uvicorn
+- Acceso a la base de datos `history.db` de RTK (SQLite)
 
 ## Instalación
 
 ```bash
-cd /opt/data/rtk-dashboard
+# Clonar el repo
+git clone https://github.com/JaimeCruzH/rtk-dashboard.git
+cd rtk-dashboard
+
+# Instalar dependencias
+pip install fastapi uvicorn
+
+# Iniciar el servidor
 ./start.sh
 # o directamente:
-/opt/hermes/.venv/bin/python server.py
+python server.py
+```
+
+## Configuración
+
+El dashboard lee de la base de datos de RTK. Asegúrate de que la ruta a `history.db` sea accesible:
+
+```bash
+# Unix/Linux/macOS
+export RTK_DB_PATH="$HOME/.local/share/rtk/history.db"
+
+# Windows
+set RTK_DB_PATH="%APPDATA%\\rtk\\history.db"
 ```
 
 ## API Endpoints
@@ -37,9 +55,11 @@ cd /opt/data/rtk-dashboard
 
 ## Acceso
 
+Una vez iniciado, el dashboard está disponible en:
+
 - **Local:** `http://localhost:8088/`
-- **Tailscale:** `http://100.80.61.96:8088/`
-- **Dominio:** `http://agentexperto.work:8088/`
+- **Tailscale:** `http://100.80.61.96:8088/` *(redirección de red configurada)*
+- **Dominio:** `http://agentexperto.work:8088/` *(requiere configuración DNS)*
 
 ## Formato de números
 
