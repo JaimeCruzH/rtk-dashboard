@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTK Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f1117;
+            --surface: #1a1b23;
+            --surface2: #252630;
+            --border: #2e303e;
+            --text: #e1e2e8;
+            --text2: #9294a0;
+            --accent: #6c5ce7;
+            --accent2: #a29bfe;
+            --green: #00b894;
+            --green2: #55efc4;
+            --orange: #fdcb6e;
+            --red: #ff7675;
+            --blue: #74b9ff;
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent2), var(--green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        header .subtitle {
+            color: var(--text2);
+            font-size: 14px;
+        }
+        .last-update {
+            color: var(--text2);
+            font-size: 13px;
+            text-align: right;
+        }
+        .last-update span { color: var(--accent2); }
+        
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); }
+        .card .label {
+            font-size: 12px;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        .card .value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .card .value.green { color: var(--green); }
+        .card .value.purple { color: var(--accent2); }
+        .card .value.orange { color: var(--orange); }
+        .card .value.blue { color: var(--blue); }
+        .card .value.red { color: var(--red); }
+        .card .sub {
+            font-size: 12px;
+            color: var(--text2);
+            margin-top: 4px;
+        }
+        .highlight-card {
+            background: linear-gradient(135deg, var(--surface), #1e1a33);
+            border-color: var(--accent);
+        }
+        
+        /* Charts Row */
+        .charts-row {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        @media (max-width: 900px) {
+            .charts-row { grid-template-columns: 1fr; }
+        }
+        .chart-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .chart-card h3 {
+            font-size: 14px;
+            color: var(--text2);
+            margin-bottom: 16px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        /* Date Filter */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px 20px;
+        }
+        .filter-bar label {
+            font-size: 13px;
+            color: var(--text2);
+        }
+        .filter-bar input[type="date"] {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        .filter-bar button {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .filter-bar button:hover { background: var(--accent2); }
+        .filter-bar .results-info {
+            color: var(--text2);
+            font-size: 13px;
+            margin-left: auto;
+        }
+        
+        /* Table */
+        .table-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 32px;
+        }
+        .table-card h3 {
+            font-size: 14px;
+            color: var(--text2);
+            padding: 16px 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        .table-scroll-wrapper {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+            min-width: 600px; /* fuerza scroll horizontal en pantallas pequeñas */
+        }
+        th {
+            text-align: left;
+            padding: 12px 16px;
+            color: var(--text2);
+            font-weight: 500;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover { color: var(--accent2); }
+        td {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 12px;
+            max-width: 300px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        tr:hover { background: var(--surface2); }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .badge.high { background: #00b89422; color: var(--green); }
+        .badge.medium { background: #fdcb6e22; color: var(--orange); }
+        .badge.low { background: #ff767522; color: var(--red); }
+        .savings-bar {
+            display: inline-block;
+            height: 6px;
+            border-radius: 3px;
+            background: var(--surface2);
+            width: 60px;
+            vertical-align: middle;
+            margin-right: 4px;
+            overflow: hidden;
+        }
+        .savings-bar .fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.3s;
+            max-width: 100%;
+        }
+        /* Columna %: evitar overflow en móvil */
+        td:nth-child(7), th:nth-child(7) {
+            white-space: nowrap;
+            min-width: 90px;
+        }
+        
+        /* Sessions list */
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .session-item {
+            background: var(--surface2);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .session-item .time {
+            font-size: 12px;
+            color: var(--text2);
+        }
+        .session-item .saved {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--green);
+        }
+        .session-item .pct {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent2);
+        }
+        .session-item .cmds {
+            font-size: 12px;
+            color: var(--text2);
+        }
+        
+        /* Top Commands Sidebar */
+        .top-list {
+            list-style: none;
+        }
+        .top-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+        }
+        .top-list li:last-child { border-bottom: none; }
+        .top-list .cmd-name {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            color: var(--accent2);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            margin-right: 12px;
+        }
+        .top-list .cmd-saved {
+            font-weight: 600;
+            color: var(--green);
+            white-space: nowrap;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px;
+            color: var(--text2);
+        }
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-msg {
+            background: #ff767522;
+            border: 1px solid #ff767544;
+            border-radius: 8px;
+            padding: 20px;
+            color: var(--red);
+            text-align: center;
+        }
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 12px;
+            padding: 16px;
+        }
+        .pagination button {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            padding: 6px 16px;
+            cursor: pointer;
+        }
+        .pagination button:hover { background: var(--accent); }
+        .pagination button:disabled { opacity: 0.4; cursor: default; }
+        .pagination span { color: var(--text2); font-size: 13px; }
+        
+        .two-col {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        @media (max-width: 900px) {
+            .two-col { grid-template-columns: 1fr; }
+        }
+
+        a { color: var(--accent2); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: var(--text2);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div>
+            <h1>RTK Dashboard</h1>
+            <div class="subtitle">Token savings analytics · Hermes Agent</div>
+        </div>
+        <div class="last-update">
+            Datos desde <span id="first-date">...</span><br>
+            Último comando: <span id="last-date">...</span>
+        </div>
+    </header>
+
+    <!-- Summary Cards -->
+    <div class="summary-grid" id="summary-grid">
+        <div class="loading">Cargando resumen...</div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <div class="chart-card">
+            <h3>Ahorro por sesión</h3>
+            <div class="chart-container">
+                <canvas id="sessionsChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>Top 10 comandos por ahorro</h3>
+            <ul class="top-list" id="top-list">
+                <li class="loading">Cargando...</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Sessions Detail -->
+    <div class="two-col">
+        <div class="chart-card">
+            <h3>Desglose diario</h3>
+            <div class="chart-container">
+                <canvas id="dailyChart"></canvas>
+            </div>
+        </div>
+        <div class="chart-card">
+            <h3>Últimas sesiones</h3>
+            <div class="session-list" id="session-list">
+                <div class="loading">Cargando...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stacked Bar: Tokens por día -->
+    <div class="chart-card" style="margin-bottom:32px;">
+        <h3>Tokens por día: total vs efectivo</h3>
+        <div class="chart-container" style="height:350px;">
+            <canvas id="tokenStackChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Date Filter + Command Table -->
+    <div class="filter-bar">
+        <label>Desde:</label>
+        <input type="date" id="filter-from">
+        <label>Hasta:</label>
+        <input type="date" id="filter-to">
+        <button onclick="applyFilter()">Filtrar</button>
+        <button onclick="clearFilter()" style="background:var(--surface2);color:var(--text2)">Limpiar</button>
+        <div class="results-info" id="results-info">Mostrando todos los comandos</div>
+    </div>
+
+    <div class="table-card">
+        <h3>Historial de comandos</h3>
+        <div class="table-scroll-wrapper">
+            <div id="table-container">
+                <div class="loading">Cargando comandos...</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Powered by RTK · Datos desde ~/.local/share/rtk/history.db
+    </div>
+</div>
+
+<script>
+// Formatear números
+function fmt(n) {
+    if (n >= 1000000) return (n/1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n/1000).toFixed(1) + 'K';
+    return n.toLocaleString();
+}
+function fmtExact(n) {
+    return n.toLocaleString('es-CL');
+}
+function fmtTime(ms) {
+    if (ms >= 60000) return (ms/60000).toFixed(1) + 'min';
+    if (ms >= 1000) return (ms/1000).toFixed(1) + 's';
+    return ms + 'ms';
+}
+function fmtDate(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleDateString('es-ES', { 
+        day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+    });
+}
+function fmtShortDate(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts);
+    return d.toLocaleDateString('es-ES', { 
+        day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+    });
+}
+
+// Colores del tema
+const COLORS = ['#6c5ce7', '#00b894', '#fdcb6e', '#ff7675', '#74b9ff', '#a29bfe', '#55efc4', '#fab1a0', '#81ecec', '#dfe6e9'];
+const COLORS2 = ['#6c5ce788', '#00b89488', '#fdcb6e88', '#ff767588', '#74b9ff88', '#a29bfe88', '#55efc488', '#fab1a088', '#81ecec88', '#dfe6e988'];
+
+function badge(pct) {
+    if (pct >= 80) return 'high';
+    if (pct >= 40) return 'medium';
+    return 'low';
+}
+
+// Fetch helper
+async function api(path) {
+    const r = await fetch(path);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return r.json();
+}
+
+// Cargar summary
+async function loadSummary() {
+    try {
+        const data = await api('/api/summary');
+        document.getElementById('first-date').textContent = fmtDate(data.first_seen);
+        document.getElementById('last-date').textContent = fmtDate(data.last_seen);
+        
+        document.getElementById('summary-grid').innerHTML = `
+            <div class="card highlight-card">
+                <div class="label">Tokens Ahorrados</div>
+                <div class="value green">${fmtExact(data.total_saved_tokens)}</div>
+            </div>
+            <div class="card">
+                <div class="label">Tokens Procesados (originales)</div>
+                <div class="value purple">${fmtExact(data.total_input_tokens + data.total_saved_tokens)}</div>
+            </div>
+            <div class="card">
+                <div class="label">Comandos</div>
+                <div class="value blue">${data.total_commands}</div>
+                <div class="sub">${fmtTime(data.total_time_ms)} de tiempo RTK</div>
+            </div>
+            <div class="card">
+                <div class="label">Ahorro Promedio</div>
+                <div class="value orange">${data.avg_savings_pct}%</div>
+            </div>
+        `;
+    } catch (e) {
+        document.getElementById('summary-grid').innerHTML = `<div class="error-msg">Error al cargar resumen: ${e.message}</div>`;
+    }
+}
+
+// Gráfico de sesiones
+let sessionsChart = null;
+
+function getTodayLocal() {
+    // Fecha actual en America/Santiago (YYYY-MM-DD)
+    return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' });
+}
+
+async function loadSessionsChart() {
+    try {
+        const sessions = await api('/api/sessions');
+        if (sessions.length === 0) {
+            document.getElementById('sessionsChart').parentElement.innerHTML = '<div class="error-msg">Sin datos de sesiones</div>';
+            return;
+        }
+
+        // Filtrar sesiones del día de hoy (America/Santiago)
+        const today = getTodayLocal();
+        let todaySessions = sessions.filter(s => {
+            const d = new Date(s.start);
+            return d.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' }) === today;
+        });
+
+        // Fallback: si no hay sesiones hoy, usar el día más reciente con actividad
+        let targetSessions = todaySessions;
+        if (targetSessions.length === 0) {
+            const daysWithSessions = [...new Set(sessions.map(s =>
+                new Date(s.start).toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
+            ))].sort().reverse();
+            if (daysWithSessions.length > 0) {
+                const mostRecentDay = daysWithSessions[0];
+                targetSessions = sessions.filter(s => {
+                    const d = new Date(s.start);
+                    return d.toLocaleDateString('en-CA', { timeZone: 'America/Santiago' }) === mostRecentDay;
+                });
+            }
+        }
+
+        if (targetSessions.length === 0) {
+            document.getElementById('sessionsChart').parentElement.innerHTML = '<div class="error-msg">Sin sesiones</div>';
+            return;
+        }
+
+        const labels = targetSessions.map((s, i) => {
+            const start = new Date(s.start);
+            return `Sesión ${i + 1} (${start.toLocaleTimeString('es-ES', { timeZone: 'America/Santiago', hour: '2-digit', minute: '2-digit' })})`;
+        });
+        const saved = targetSessions.map(s => Math.round(s.saved_tokens));
+        const pcts = targetSessions.map(s => s.savings_pct);
+        
+        if (sessionsChart) sessionsChart.destroy();
+        const ctx = document.getElementById('sessionsChart').getContext('2d');
+        sessionsChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Tokens ahorrados',
+                    data: saved,
+                    backgroundColor: COLORS.map(c => c + '88'),
+                    borderColor: COLORS,
+                    borderWidth: 1,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    datalabels: {
+                        display: true,
+                        color: '#ffffff',
+                        font: { size: 10, weight: 'bold' },
+                        formatter: (value) => fmt(value),
+                        anchor: 'center',
+                        align: 'center'
+                    },
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const v = ctx.parsed.y;
+                                const p = pcts[ctx.dataIndex];
+                                return `${fmt(v)} tokens (${p}%)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { 
+                            color: '#9294a0', 
+                            font: { size: 10 },
+                            maxRotation: 60
+                        },
+                        grid: { color: '#2e303e44' }
+                    },
+                    y: {
+                        ticks: { 
+                            color: '#9294a0',
+                            callback: (v) => fmt(v)
+                        },
+                        grid: { color: '#2e303e44' }
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        document.getElementById('sessionsChart').parentElement.innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
+    }
+}
+
+// Top 10 commands
+async function loadTopCommands() {
+    try {
+        const data = await api('/api/top-commands?n=10');
+        const list = document.getElementById('top-list');
+        list.innerHTML = data.map((c, i) => `
+            <li>
+                <span class="cmd-name">${c.original_cmd.length > 35 ? c.original_cmd.slice(0, 35)+'…' : c.original_cmd}</span>
+                <span class="cmd-saved">${fmt(c.saved_tokens)} tok</span>
+                <span style="color:#9294a0;font-size:11px;margin-left:8px">${c.avg_savings_pct}%</span>
+            </li>
+        `).join('');
+    } catch (e) {
+        document.getElementById('top-list').innerHTML = `<li style="color:var(--red)">Error: ${e.message}</li>`;
+    }
+}
+
+// Daily chart
+let dailyChart = null;
+async function loadDailyChart() {
+    try {
+        const data = await api('/api/daily');
+        if (data.length === 0) return;
+        
+        const labels = data.map(d => {
+            const parts = d.day.split('-');
+            return parts[2] + '/' + parts[1];
+        });
+        const saved = data.map(d => d.saved_tokens);
+        const cmds = data.map(d => d.commands);
+        
+        if (dailyChart) dailyChart.destroy();
+        const ctx = document.getElementById('dailyChart').getContext('2d');
+        dailyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Tokens ahorrados',
+                        data: saved,
+                        borderColor: '#6c5ce7',
+                        backgroundColor: '#6c5ce722',
+                        fill: true,
+                        tension: 0.3,
+                        yAxisID: 'y',
+                    },
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    datalabels: {
+                        display: true,
+                        color: '#ffffff',
+                        font: { size: 10, weight: 'bold' },
+                        formatter: (value) => fmt(value)
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => `${fmt(ctx.parsed.y)} tokens`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9294a0', font: { size: 10 } },
+                        grid: { color: '#2e303e44' }
+                    },
+                    y: {
+                        ticks: { color: '#9294a0', callback: (v) => fmt(v) },
+                        grid: { color: '#2e303e44' },
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error('Daily chart error:', e);
+    }
+}
+
+// Sessions list
+async function loadSessionsList() {
+    try {
+        const sessions = await api('/api/sessions');
+        const container = document.getElementById('session-list');
+        const recent = sessions.slice(-5).reverse();
+        container.innerHTML = recent.map(s => `
+            <div class="session-item">
+                <div>
+                    <div class="time">${fmtShortDate(s.start)} — ${fmtShortDate(s.end)}</div>
+                    <div class="cmds">${s.total_commands} comandos · ${fmtTime(s.total_time_ms)}</div>
+                </div>
+                <div style="text-align:right">
+                    <div class="saved">${fmt(s.saved_tokens)} ahorrados</div>
+                    <div class="pct">${s.savings_pct}%</div>
+                </div>
+            </div>
+        `).join('');
+    } catch (e) {
+        document.getElementById('session-list').innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
+    }
+}
+
+// Command Table
+let commandsOffset = 0;
+let commandsTotal = 0;
+const COMMANDS_LIMIT = 50;
+
+async function loadCommands(fromDate, toDate) {
+    const container = document.getElementById('table-container');
+    container.innerHTML = '<div class="loading">Cargando...</div>';
+    
+    try {
+        let path;
+        if (fromDate || toDate) {
+            const params = new URLSearchParams();
+            if (fromDate) params.set('from', fromDate);
+            if (toDate) params.set('to', toDate);
+            const data = await api(`/api/range?${params.toString()}`);
+            
+            commandsTotal = data.summary.total_commands;
+            const cmds = data.commands;
+            const start = commandsOffset;
+            const end = Math.min(start + COMMANDS_LIMIT, cmds.length);
+            const page = cmds.slice(start, end);
+            
+            renderTable(page, container, commandsTotal);
+        } else {
+            const data = await api(`/api/commands?limit=${COMMANDS_LIMIT}&offset=${commandsOffset}&sort=timestamp&order=desc`);
+            commandsTotal = data.total;
+            renderTable(data.commands, container, data.total);
+        }
+    } catch (e) {
+        container.innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
+    }
+}
+
+function renderTable(cmds, container, total) {
+    const pageStart = commandsOffset + 1;
+    const pageEnd = Math.min(commandsOffset + COMMANDS_LIMIT, total);
+    
+    container.innerHTML = `
+        <div class="table-scroll-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Timestamp</th>
+                        <th>Comando original</th>
+                        <th style="text-align:right">Input</th>
+                        <th style="text-align:right">Output</th>
+                        <th style="text-align:right">Ahorro</th>
+                        <th style="text-align:center">%</th>
+                        <th style="text-align:right">Tiempo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${cmds.map(c => `
+                        <tr>
+                            <td style="color:var(--text2)">${c.id || '—'}</td>
+                            <td style="color:var(--text2);font-size:11px">${fmtShortDate(c.timestamp || c.start)}</td>
+                            <td>${(c.original_cmd || c.rtk_cmd || '').length > 50 ? (c.original_cmd || c.rtk_cmd || '').slice(0,50)+'…' : (c.original_cmd || c.rtk_cmd || '')}</td>
+                            <td style="text-align:right;font-size:11px">${c.input_tokens ? fmt(c.input_tokens) : '—'}</td>
+                            <td style="text-align:right;font-size:11px">${c.output_tokens ? fmt(c.output_tokens) : '—'}</td>
+                            <td style="text-align:right;color:var(--green);font-weight:600">${c.saved_tokens ? fmt(c.saved_tokens) : (c.savings_pct ? '' : '—')}</td>
+                            <td style="text-align:center">
+                                <span class="badge ${badge(c.savings_pct || 0)}">${(c.savings_pct || 0).toFixed(1)}%</span>
+                            </td>
+                            <td style="text-align:right;font-size:11px;color:var(--text2)">${c.exec_time_ms != null ? c.exec_time_ms + 'ms' : '—'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        <div class="pagination">
+            <button onclick="prevPage()" ${commandsOffset <= 0 ? 'disabled' : ''}>← Anterior</button>
+            <span>${pageStart}–${pageEnd} de ${total}</span>
+            <button onclick="nextPage()" ${pageEnd >= total ? 'disabled' : ''}>Siguiente →</button>
+        </div>
+    `;
+}
+
+function nextPage() {
+    commandsOffset += COMMANDS_LIMIT;
+    if (commandsOffset >= commandsTotal) commandsOffset = Math.max(0, commandsTotal - COMMANDS_LIMIT);
+    const from = document.getElementById('filter-from').value;
+    const to = document.getElementById('filter-to').value;
+    loadCommands(from || null, to || null);
+}
+
+function prevPage() {
+    commandsOffset = Math.max(0, commandsOffset - COMMANDS_LIMIT);
+    const from = document.getElementById('filter-from').value;
+    const to = document.getElementById('filter-to').value;
+    loadCommands(from || null, to || null);
+}
+
+function applyFilter() {
+    commandsOffset = 0;
+    const from = document.getElementById('filter-from').value;
+    const to = document.getElementById('filter-to').value;
+    
+    const info = document.getElementById('results-info');
+    if (from && to) info.textContent = `Comandos entre ${from} y ${to}`;
+    else if (from) info.textContent = `Comandos desde ${from}`;
+    else if (to) info.textContent = `Comandos hasta ${to}`;
+    else info.textContent = 'Mostrando todos los comandos';
+    
+    loadCommands(from || null, to || null);
+}
+
+function clearFilter() {
+    document.getElementById('filter-from').value = '';
+    document.getElementById('filter-to').value = '';
+    commandsOffset = 0;
+    document.getElementById('results-info').textContent = 'Mostrando todos los comandos';
+    loadCommands(null, null);
+}
+
+// Gráfico de barras apiladas: tokens originales vs comprimidos por día
+let tokenStackChart = null;
+async function loadTokenStackChart() {
+    try {
+        const data = await api('/api/tokens-by-day');
+        if (data.length === 0) return;
+        
+        const labels = data.map(d => {
+            const parts = d.day.split('-');
+            return parts[2] + '/' + parts[1];
+        });
+        const originalTokens = data.map(d => Math.round(d.original_tokens));
+        const compressedTokens = data.map(d => Math.round(d.compressed_tokens));
+        const savedTokens = data.map(d => Math.round(d.saved_tokens));
+        const savingsPcts = data.map(d => d.avg_savings_pct);
+        
+        if (tokenStackChart) tokenStackChart.destroy();
+        const ctx = document.getElementById('tokenStackChart').getContext('2d');
+        tokenStackChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Tokens efectivos (comprimidos)',
+                        data: compressedTokens,
+                        backgroundColor: '#6c5ce7',
+                        borderRadius: 4,
+                    },
+                    {
+                        label: 'Tokens ahorrados por RTK',
+                        data: savedTokens,
+                        backgroundColor: '#00b89488',
+                        borderRadius: 4,
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        ticks: { color: '#9294a0', font: { size: 11 } },
+                        grid: { color: '#2e303e44' }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        ticks: { 
+                            color: '#9294a0', 
+                            callback: (v) => fmt(v)
+                        },
+                        grid: { color: '#2e303e44' }
+                    }
+                },
+                plugins: {
+                    datalabels: {
+                        display: true,
+                        color: '#ffffff',
+                        font: { size: 10, weight: 'bold' },
+                        formatter: (value) => fmt(value),
+                        anchor: 'center',
+                        align: 'center'
+                    },
+                    legend: {
+                        labels: { color: '#e1e2e8', font: { size: 12 } },
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: (items) => 'Día ' + items[0].label,
+                            label: (ctx) => {
+                                const i = ctx.dataIndex;
+                                const label = ctx.dataset.label;
+                                const val = fmt(ctx.parsed.y);
+                                const total = fmt(originalTokens[i]);
+                                const pct = savingsPcts[i];
+                                if (ctx.datasetIndex === 1) {
+                                    return `${label}: ${val} tok (${pct}% ahorro)`;
+                                }
+                                return `${label}: ${val} tok de ${total} totales`;
+                            },
+                            footer: (items) => {
+                                const i = items[0].dataIndex;
+                                return `Total sin RTK: ${fmt(originalTokens[i])} tok · ${data[i].commands} comandos`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (e) {
+        console.error('Token stack chart error:', e);
+        const el = document.getElementById('tokenStackChart');
+        if (el) el.parentElement.innerHTML = `<div class="error-msg">Error: ${e.message}</div>`;
+    }
+}
+
+// Set default date filter to today (solo el día de hoy por defecto)
+function initDates() {
+    const today = new Date();
+    document.getElementById('filter-from').valueAsDate = today;
+    document.getElementById('filter-to').valueAsDate = today;
+}
+
+// Init
+async function init() {
+    // Registrar chartjs-plugin-datalabels
+    if (typeof ChartDataLabels !== 'undefined') {
+        Chart.register(ChartDataLabels);
+    }
+    initDates();
+    await loadSummary();
+    await Promise.all([
+        loadSessionsChart(),
+        loadTopCommands(),
+        loadDailyChart(),
+        loadSessionsList(),
+        loadTokenStackChart(),
+    ]);
+    await loadCommands(null, null);
+}
+
+init();
+</script>
+</body>
+</html>
