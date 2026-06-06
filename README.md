@@ -100,7 +100,9 @@ systemctl --user status rtk-dashboard.service
 Una vez iniciado, el dashboard está disponible en:
 
 - **Local:** `http://localhost:8088/`
-- **Tailscale:** `http://100.81.231.103:8088/` (si Tailscale está configurado)
+- **Remoto:** vía [Tailscale](https://tailscale.com/) (acceso privado a la red local)
+
+> **Nota de seguridad:** Este dashboard es una herramienta interna sin autenticación. No está diseñado para exposición pública. Úsalo únicamente dentro de tu red privada o vía Tailscale.
 
 ## API Endpoints
 
