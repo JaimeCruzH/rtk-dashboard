@@ -10,6 +10,7 @@ import zoneinfo
 from collections import defaultdict
 from datetime import datetime, timedelta
 from fastapi import FastAPI, Query
+from fastapi.staticfiles import StaticFiles
 
 TZ = zoneinfo.ZoneInfo("America/Santiago")
 UTC = zoneinfo.ZoneInfo("UTC")
@@ -23,8 +24,6 @@ def utc_to_local_date(ts_str):
         clean = clean.split('.')[0]
     dt_utc = datetime.fromisoformat(clean).replace(tzinfo=UTC)
     return dt_utc.astimezone(TZ).strftime("%Y-%m-%d")
-from fastapi.responses import JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="RTK Dashboard")
 
@@ -177,9 +176,18 @@ def get_tokens_by_day():
 GATEWAY_LOG = os.path.expanduser("~/.hermes/logs/gateway.log")
 SESSION_TIMEOUT = 1800  # 30 min en segundos
 
+# Cache para session resets del gateway (TTL 60s)
+_session_resets_cache = {"data": None, "ts": 0.0}
+
 def load_session_resets():
     """Lee gateway.log y extrae timestamps de session_reset para el chat actual.
-    Los timestamps del log están en UTC (misma zona que RTK)."""
+    Los timestamps del log están en UTC (misma zona que RTK).
+    Resultado cacheado 60 segundos para no releer el log en cada request."""
+    import time
+    now = time.monotonic()
+    if _session_resets_cache["data"] is not None and now - _session_resets_cache["ts"] < 60:
+        return _session_resets_cache["data"]
+
     resets = []
     if not os.path.isfile(GATEWAY_LOG):
         return resets
@@ -200,7 +208,10 @@ def load_session_resets():
                     continue
     except Exception:
         pass
-    return sorted(resets)
+    resets = sorted(resets)
+    _session_resets_cache["data"] = resets
+    _session_resets_cache["ts"] = now
+    return resets
 
 # ── Funciones de consulta ────────────────────────────────────────────
 
@@ -227,6 +238,7 @@ def get_sessions():
     sessions = []
     current = []
     prev_ts = None
+    session_counter = 0
 
     for r in rows:
         cmd = dict(r)
@@ -247,18 +259,19 @@ def get_sessions():
         
         if crossed_reset or gap_long:
             if current:
-                sessions.append(build_session(current))
+                sessions.append(build_session(current, session_counter))
+                session_counter += 1
             current = []
         
         current.append(cmd)
         prev_ts = ts
 
     if current:
-        sessions.append(build_session(current))
+        sessions.append(build_session(current, session_counter))
 
     return sessions
 
-def build_session(commands):
+def build_session(commands, idx):
     """Convierte una lista de comandos en un objeto de sesión resumido"""
     first = commands[0]
     last = commands[-1]
@@ -275,7 +288,7 @@ def build_session(commands):
         pct = 0.0
     
     return {
-        "session_id": f"{first['timestamp'][:19]}_{id(commands)}",
+        "session_id": f"{first['timestamp'][:19]}_{idx}",
         "start": first["timestamp"],
         "end": last["timestamp"],
         "total_commands": len(commands),
@@ -291,7 +304,9 @@ def build_session(commands):
 @app.get("/api/range")
 def get_range(
     from_date: str = Query(None, alias="from"),
-    to_date: str = Query(None, alias="to")
+    to_date: str = Query(None, alias="to"),
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0)
 ):
     """Comandos filtrados por rango de fechas (fechas locales America/Santiago)
     con estadísticas agregadas"""
@@ -331,6 +346,9 @@ def get_range(
             "avg_savings_pct": pct,
             "total_time_ms": total_time
         },
+        "total": len(commands),
+        "limit": limit,
+        "offset": offset,
         "commands": [
             {
                 "id": c["id"],
@@ -343,7 +361,7 @@ def get_range(
                 "savings_pct": c["savings_pct"],
                 "exec_time_ms": c["exec_time_ms"]
             }
-            for c in commands
+            for c in commands[offset:offset + limit]
         ]
     }
 

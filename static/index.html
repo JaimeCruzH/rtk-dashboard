@@ -774,15 +774,12 @@ async function loadCommands(fromDate, toDate) {
             const params = new URLSearchParams();
             if (fromDate) params.set('from', fromDate);
             if (toDate) params.set('to', toDate);
+            params.set('limit', COMMANDS_LIMIT);
+            params.set('offset', commandsOffset);
             const data = await api(`/api/range?${params.toString()}`);
             
-            commandsTotal = data.summary.total_commands;
-            const cmds = data.commands;
-            const start = commandsOffset;
-            const end = Math.min(start + COMMANDS_LIMIT, cmds.length);
-            const page = cmds.slice(start, end);
-            
-            renderTable(page, container, commandsTotal);
+            commandsTotal = data.total;
+            renderTable(data.commands, container, data.total);
         } else {
             const data = await api(`/api/commands?limit=${COMMANDS_LIMIT}&offset=${commandsOffset}&sort=timestamp&order=desc`);
             commandsTotal = data.total;
@@ -974,11 +971,11 @@ async function loadTokenStackChart() {
     }
 }
 
-// Set default date filter to today (solo el día de hoy por defecto)
+// Set default date filter to today in America/Santiago
 function initDates() {
-    const today = new Date();
-    document.getElementById('filter-from').valueAsDate = today;
-    document.getElementById('filter-to').valueAsDate = today;
+    const today = getTodayLocal(); // YYYY-MM-DD en America/Santiago
+    document.getElementById('filter-from').value = today;
+    document.getElementById('filter-to').value = today;
 }
 
 // Init
