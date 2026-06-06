@@ -28,7 +28,7 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI(title="RTK Dashboard")
 
-DB_PATH = "/opt/data/home/.local/share/rtk/history.db"
+DB_PATH = os.path.expanduser("~/.local/share/rtk/history.db")
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -174,7 +174,7 @@ def get_tokens_by_day():
 
     return result
 
-GATEWAY_LOG = "/opt/data/logs/gateway.log"
+GATEWAY_LOG = os.path.expanduser("~/.hermes/logs/gateway.log")
 SESSION_TIMEOUT = 1800  # 30 min en segundos
 
 def load_session_resets():
@@ -388,8 +388,8 @@ def get_failures(limit: int = Query(20, ge=1, le=100)):
 def get_commands(
     limit: int = Query(50, ge=1, le=200),
     offset: int = Query(0, ge=0),
-    sort: str = Query("timestamp", regex="^(timestamp|saved_tokens|savings_pct)$"),
-    order: str = Query("desc", regex="^(asc|desc)$")
+    sort: str = Query("timestamp", pattern="^(timestamp|saved_tokens|savings_pct)$"),
+    order: str = Query("desc", pattern="^(asc|desc)$")
 ):
     """Lista paginada de comandos"""
     conn = get_connection()
