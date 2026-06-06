@@ -58,6 +58,11 @@
             text-align: right;
         }
         .last-update span { color: var(--accent2); }
+        .refresh-info { 
+            font-size: 11px; 
+            color: var(--text2); 
+            opacity: 0.7;
+        }
         
         /* Summary Cards */
         .summary-grid {
@@ -388,7 +393,8 @@
         </div>
         <div class="last-update">
             Datos desde <span id="first-date">...</span><br>
-            Último comando: <span id="last-date">...</span>
+            Último comando: <span id="last-date">...</span><br>
+            <span class="refresh-info">Auto-refresh: <span id="next-refresh">15:00</span></span>
         </div>
     </header>
 
@@ -995,6 +1001,29 @@ async function init() {
     ]);
     await loadCommands(null, null);
 }
+
+// Auto-refresh every 15 minutes
+const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes in ms
+let nextRefreshTime = Date.now() + REFRESH_INTERVAL;
+
+function updateRefreshCountdown() {
+    const remaining = Math.max(0, nextRefreshTime - Date.now());
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    const el = document.getElementById('next-refresh');
+    if (el) {
+        el.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+async function refreshAll() {
+    nextRefreshTime = Date.now() + REFRESH_INTERVAL;
+    await init();
+}
+
+// Start auto-refresh
+setInterval(updateRefreshCountdown, 1000); // Update countdown every second
+setInterval(refreshAll, REFRESH_INTERVAL); // Refresh data every 15 min
 
 init();
 </script>
