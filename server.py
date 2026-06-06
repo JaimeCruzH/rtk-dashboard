@@ -27,7 +27,13 @@ def utc_to_local_date(ts_str):
 
 app = FastAPI(title="RTK Dashboard")
 
-DB_PATH = os.path.expanduser("~/.local/share/rtk/history.db")
+# Use HERMES_HOME to find the correct RTK database
+# When HERMES_HOME is set (profile mode), RTK writes inside it
+_hermes_home = os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))
+DB_PATH = os.path.join(_hermes_home, "home", ".local", "share", "rtk", "history.db")
+# Fallback: if the profile path doesn't exist, use the standard path
+if not os.path.exists(DB_PATH):
+    DB_PATH = os.path.expanduser("~/.local/share/rtk/history.db")
 
 def get_connection():
     conn = sqlite3.connect(DB_PATH)
@@ -173,7 +179,8 @@ def get_tokens_by_day():
 
     return result
 
-GATEWAY_LOG = os.path.expanduser("~/.hermes/logs/gateway.log")
+_HERMES_HOME = os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes"))
+GATEWAY_LOG = os.path.join(_HERMES_HOME, "logs", "gateway.log")
 SESSION_TIMEOUT = 1800  # 30 min en segundos
 
 # Cache para session resets del gateway (TTL 60s)
@@ -181,7 +188,7 @@ _session_resets_cache = {"data": None, "ts": 0.0}
 
 def load_session_resets():
     """Lee gateway.log y extrae timestamps de session_reset para el chat actual.
-    Los timestamps del log están en UTC (misma zona que RTK).
+    Los timestamps del gateway están en hora local; se convierten a UTC internamente.
     Resultado cacheado 60 segundos para no releer el log en cada request."""
     import time
     now = time.monotonic()
@@ -200,9 +207,11 @@ def load_session_resets():
                 if len(parts) < 2:
                     continue
                 # Formato: "2026-05-26 22:23:23,038 INFO ..."
+                # El gateway escribe en hora local; convertir a UTC para
+                # comparar con los timestamps de la BD de RTK (que son UTC).
                 ts_str = f"{parts[0]} {parts[1].split(',')[0]}"
                 try:
-                    dt = datetime.fromisoformat(ts_str).replace(tzinfo=UTC)
+                    dt = datetime.fromisoformat(ts_str).replace(tzinfo=TZ).astimezone(UTC)
                     resets.append(dt)
                 except ValueError:
                     continue
